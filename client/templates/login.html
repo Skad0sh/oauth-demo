@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Oauth Client</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <style>
+            input[type=submit] {
+                color:rgb(255, 0, 0);
+                background-color:rgb(36, 88, 230);
+            }
+            input[type=submit]:onhover {
+                border: 3px solid rgb(0, 0, 0);
+            }
+        </style>
+        <div id="myauth">
+            <!-- make a box that has a button inside it -->
+            <div class="box">
+                    <input type="submit" id="oauth" value="Login With Server" onclick="authorize()">
+            </div>
+        </div>
+        <script>
+            function authorize(){
+            //     fetch("http://localhost:3000/oauth?client_id=secret&response_type=code&redirect_uri=http://localhost:5000/callback&scope=read&state={{state_token}}",{
+            //         mode: 'cors'
+            //     }).then(
+            //         (res)=>{console.log(res.type);res.json()}).then(
+            //             (data)=>{console.log(data)});
+            // }
+                    window.location.href = "http://localhost:3000/oauth?client_id=secret&response_type=code&redirect_uri=http://localhost:5000/callback&scope=read&state={{state_token}}"
+             }
+        </script>
+    </body>
+</html>

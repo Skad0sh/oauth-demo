@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<!-- make a login page -->
+<html>
+    <head>
+        <title>Oauth Server</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <h1>
+            Login to Oauth server
+        </h1>
+        <form action="/oauth/login" method="POST">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="user" placeholder="username"><br><br>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="pass" placeholder="password"><br><br>
+            <!-- put ejs template string to view scope send from nodejs server -->
+            <label for="authorize">Authorize to <%= scope %>  your data: </label>
+            <input type="checkbox" id="authorize" name="authorize" value="read"><br><br>
+            <input type="submit" value="Login">
+    </body>
+</html>
