@@ -2,6 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const { v4: uuidv4 } = require('uuid');
+
 const app = express();
 app.set('view engine', 'ejs');
 const port = 3000;
@@ -110,7 +111,7 @@ app.get('/oauth', (req, res) => {
     req.session.redirect_uri = redirect_uri;
     req.session.scope = scope;
     req.session.state = state;
-    res.redirect("http://localhost:3000/oauth/login");
+    res.redirect("/oauth/login");
 });
 
 app.listen(port, () => {
