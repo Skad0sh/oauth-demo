@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<!-- make a login page -->
+<html>
+    <head>
+        <title>Oauth Server</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <h1>
+            Register your client
+        </h1>
+        <form action="/clients/register" method="POST">
+            <label for="client_name">Client Name:</label>
+            <input type="text" id="client_name" name="client_name" placeholder="example"><br><br>
+            <label for="uri">Redirect uri:</label>
+            <input type="text" id="uri" name="uri" placeholder="http://example.com/callback"><br><br>
+            <input type="submit" value="Register">
+        </form>
+    </body>
+</html>

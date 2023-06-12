@@ -6,7 +6,7 @@ app = Flask(__name__)
 app.secret_key = str(uuid.uuid4()).replace("-","")
 AUTH_SERVER = "http://localhost:3000"
 CLIENT_SERVER = "http://localhost:5000"
-INTERNAL_AUTH_SERVER = "http://server:3000" 
+INTERNAL_AUTH_SERVER = "http://localhost:3000" 
 
 @app.route("/",methods=["GET"])
 def index():
@@ -15,7 +15,7 @@ def index():
 @app.route("/login",methods=["GET","POST"])
 def login():
     if(session.get("access_token")):
-        r = requests.post(f"{AUTH_SERVER}/oauth/api/data",data={"access_token":session["access_token"]})
+        r = requests.post(f"{AUTH_SERVER}/oauth/api/data",data={"access_token":session["access_token"],"client_id":"9ebea9bd56ad4f52a0d032a07d459d79"})
         username = r.json()["username"]
         email = r.json()["email"]
         session["username"] = username
@@ -33,13 +33,13 @@ def callback():
     state = request.args.get("state").strip()
     if(state == session["state"]):
         print("fine")
-        r=requests.post(f"{INTERNAL_AUTH_SERVER}/oauth/token",data={"code":code,"client_secret":"verysecret","client_id":"secret","redirect_uri":f"{CLIENT_SERVER}/callback","grant_type":"authorization_code"})
+        r=requests.post(f"{INTERNAL_AUTH_SERVER}/oauth/token",data={"code":code,"client_secret":"809bac3928114e89bd5e1df9d66b12d0","client_id":"9ebea9bd56ad4f52a0d032a07d459d79","redirect_uri":f"{CLIENT_SERVER}/callback","grant_type":"authorization_code"})
         if(r.json().get("error")):
             return {"code":code,"state":state}
         token = r.json()["access_token"]
         session["access_token"] = token
         print(r.json())
-        # return redirect("/login")
+        return redirect("/login")
     return {"code":code,"state":state}
 
 if __name__ == "__main__":

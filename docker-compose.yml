@@ -8,3 +8,7 @@ services:
     build: server/
     ports:
       - '3000:3000'
+  mongodb:
+    build: mongodb/
+    ports:
+      - '27017:27017'
