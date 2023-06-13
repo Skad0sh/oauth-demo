@@ -23,8 +23,11 @@ let auth_codes = [];
 
 //set middle ware to api endpoints only
 async function checkToken(req,res,next){
-    client_id = req.body.client_id;
-    cursor = await db.collection('clients').findOne({client_id: client_id});
+    var username = req.body.username;
+    if(typeof username != 'string'){
+        return res.send({info: "Aborted: Invalid input"});
+    }
+    cursor = await db.collection('users').findOne({username: username.toString()});
     console.log(JSON.stringify(cursor));
     if(req.body.access_token != cursor.token){
         console.log('check token failed');
@@ -33,15 +36,20 @@ async function checkToken(req,res,next){
     next();
 }
 
-app.post('/oauth/api/data', checkToken, (req, res) => {
-    return res.json({email: "adminuser@server.com",username: "adminuser"});
+app.post('/oauth/api/data', checkToken,async (req, res) => {
+    var username = req.body.username;
+    if(typeof username != 'string'){
+        return res.send({info: "Aborted: Invalid input"});
+    }
+    cursor = await db.collection('users').findOne({username: username.toString()});
+    return res.json({email: cursor.email,username: cursor.username});
 });
 
 app.get('/oauth/login', (req, res) => {
     if(req.session.loggedin){
         // TODO: we have to implement to send and check if authorized button is clicked
         var code = uuidv4().toString().replace(/-/g, "");
-        auth_codes.push({client_id: req.session.client_id, auth_code: code});
+        auth_codes.push({username: req.session.username,client_id: req.session.client_id, auth_code: code});
         return res.redirect(req.session.redirect_uri + "?code="+code+"&state=" + req.session.state);
     }
     res.render('login',{scope: req.session.scope});
@@ -55,8 +63,9 @@ app.post('/oauth/login', (req, res) => {
     // TODO: implement an actual authentication -_(-_-)_-
     if(user=="admin" && pass=="admin"){
         req.session.loggedin = true;
+        req.session.username = user;
         if(authorize){
-            auth_codes.push({client_id: req.session.client_id, auth_code: code});
+            auth_codes.push({username: user,client_id: req.session.client_id, auth_code: code});
            return res.redirect(req.session.redirect_uri + "?code="+code+"&state=" + req.session.state);
         }
         return res.render('login', {scope: req.session.scope});
@@ -71,20 +80,26 @@ app.post('/oauth/token', async (req, res) => {
     var client_id = req.body.client_id;
     var client_secret = req.body.client_secret;
     // check if the client id and client secret are valid add mongodb check instead of hardcode
-    if(client_id == "9ebea9bd56ad4f52a0d032a07d459d79" && client_secret == "809bac3928114e89bd5e1df9d66b12d0"){
+    // TODO: actual check using mongodb
+    cursor = await db.collection('clients').findOne({client_id: client_id,client_secret: client_secret});
+    if(cursor){
         if(grant_type == "authorization_code"){
             for(var codes of auth_codes){
                 if(code == codes.auth_code && client_id == codes.client_id){
+                    auth_codes.splice(auth_codes.indexOf(codes),1);
+                    console.log(auth_codes.indexOf(codes));
                     var access_token = uuidv4().toString().replace(/-/g, "");
                     var refresh_token = uuidv4().toString().replace(/-/g, "");
                     var expiry_date = new Date();
                     expiry_date.setSeconds(expiry_date.getSeconds() + 3600);
-                    // save the values in session X <= this way was dump so now we gonna save it in mongodb
-                    await db.collection('clients').updateOne({client_id: client_id},{"$set":{token: access_token,rtoken: refresh_token}},(err,result)=>{
+                    
+                    // save the values in session X <= this way was dump so now we gonna save it in mongodb [*]
+                    // TODO: save access_token in users collection instead of clients [*]
+                    await db.collection('users').updateOne({username: codes.username},{"$set":{token: access_token,rtoken: refresh_token}},(err,result)=>{
                         if(err) throw err;
                     })
                     req.session.expiry_date = expiry_date;
-                    
+
                     return res.json({access_token: access_token, refresh_token: refresh_token});
                 }
             }
@@ -93,14 +108,21 @@ app.post('/oauth/token', async (req, res) => {
     return res.json({error: "invalid_grant"});
 });
 
-app.get('/oauth', (req, res) => {
+app.get('/oauth',async (req, res) => {
     // get all the values from the client oauth query string
     var client_id = req.query.client_id;
     var response_type = req.query.response_type;
     var redirect_uri = req.query.redirect_uri;
     var scope = req.query.scope;
     var state = req.query.state;
-    // save the values in session
+    // TODO: checks for redirect_uri , check if redirect uri is empty || redirect_uri is same for client_id else return [*]
+    if(typeof redirect_uri != 'string' || typeof client_id != 'string'){
+        return res.send({info: "Aborted: Invalid input"});
+    }
+    cursor = await db.collection('clients').findOne({client_id: client_id.toString(),client_uri: redirect_uri.toString()});
+    if(!cursor){
+        return res.send("Aborted: invalid redirect uri/client_id");
+    }
     req.session.client_id = client_id;
     req.session.response_type = response_type;
     req.session.redirect_uri = redirect_uri;
@@ -114,26 +136,27 @@ app.get("/clients/register",(req,res)=>{
 });
 // TODO: regex check for matching proper URI's
 app.post("/clients/register",async (req,res)=>{
-    client_uri = req.body.uri;
-    client_name = req.body.client_name;
-    client_id = uuidv4().toString().replace(/-/g, "");
+    var client_uri = req.body.uri;
+    var client_name = req.body.client_name;
+    var client_id = uuidv4().toString().replace(/-/g, "");
     client_secret = uuidv4().toString().replace(/-/g, "");
     if(typeof client_uri != 'string' || typeof client_name != 'string'){
-        return res.send({info: "Aborted: Invalid input"})
+        return res.send({info: "Aborted: Invalid input"});
     }
     cursor = await db.collection('clients').findOne({client_uri: client_uri});
     if(!client_uri){
-        return res.send({info: "Aborted: PLease specify a redirect URI"})
+        return res.send({info: "Aborted: PLease specify a redirect URI"});
     }
     if(cursor){
-        return res.send({info: "Aborted: Client already exists"})
+        return res.send({info: "Aborted: Client already exists"});
     }
-    await db.collection('clients').insertOne({client_name: client_name,client_id: client_id,client_secret: client_secret,client_uri: client_uri.toString(),token: '',rtoken: ''},
+    // TODO: PUT CHECK TO SEE IF client_name or client_uri is already registered
+    await db.collection('clients').insertOne({client_name: client_name,client_id: client_id,client_secret: client_secret,client_uri: client_uri.toString()},
     (err,result)=>{
         if(err) throw err;
         console.log(`This is the result of insert in mongodb: ${result}`);
     });
-    return res.send({client_id: client_id,client_secret: client_secret,info: "PLease save this values"})
+    return res.send({client_id: client_id,client_secret: client_secret,info: "PLease save this values"});
 });
 
 app.listen(port, () => {

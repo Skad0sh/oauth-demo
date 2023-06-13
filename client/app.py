@@ -15,7 +15,7 @@ def index():
 @app.route("/login",methods=["GET","POST"])
 def login():
     if(session.get("access_token")):
-        r = requests.post(f"{AUTH_SERVER}/oauth/api/data",data={"access_token":session["access_token"],"client_id":"9ebea9bd56ad4f52a0d032a07d459d79"})
+        r = requests.post(f"{AUTH_SERVER}/oauth/api/data",data={"access_token":session["access_token"],"username":"admin"})
         username = r.json()["username"]
         email = r.json()["email"]
         session["username"] = username
@@ -35,7 +35,7 @@ def callback():
         print("fine")
         r=requests.post(f"{INTERNAL_AUTH_SERVER}/oauth/token",data={"code":code,"client_secret":"809bac3928114e89bd5e1df9d66b12d0","client_id":"9ebea9bd56ad4f52a0d032a07d459d79","redirect_uri":f"{CLIENT_SERVER}/callback","grant_type":"authorization_code"})
         if(r.json().get("error")):
-            return {"code":code,"state":state}
+            return {"error":r.json().get("error")}
         token = r.json()["access_token"]
         session["access_token"] = token
         print(r.json())
